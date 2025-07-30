@@ -7,6 +7,9 @@
   --button-primary-hover: #383838;
   --button-secondary-hover: #f2f2f2;
 
+  /* Override hover colour for primary buttons to complement the new accent */
+  --button-primary-hover: #005bb5;
+
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -14,8 +17,11 @@
   padding: 64px 32px;
   gap: 48px;
   font-family: var(--font-geist-sans);
-  background: var(--background);
+  /* Light background for a more inviting look */
+  background: #f5f8ff;
   color: var(--foreground);
+  /* Primary accent color used throughout the UI */
+  --primary-color: #0070f3;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -119,34 +125,79 @@
 /* ----------------------------------------------------------------------- */
 
 /* Progress bar that displays the current step */
+/* Horizontal step progress bar */
 .progressBar {
   display: flex;
-  gap: 8px;
+  justify-content: space-between;
+  width: 100%;
   padding: 0;
-  margin: 16px 0;
+  margin: 24px 0;
   list-style: none;
-  justify-content: center;
-  font-size: 12px;
-  text-transform: uppercase;
-  flex-wrap: wrap;
+  position: relative;
+}
+
+/* Draw connecting line behind the steps */
+.progressBar::before {
+  content: "";
+  position: absolute;
+  top: 18px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: rgba(0, 112, 243, 0.2);
+  z-index: 0;
 }
 
 .progressStep {
-  padding: 8px 12px;
-  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  text-align: center;
+  font-size: 12px;
+}
+
+/* Circle containing the step number */
+.stepCircle {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
   background: var(--gray-alpha-100);
-  border: 1px solid var(--gray-alpha-200);
+  color: var(--foreground);
+  border: 2px solid var(--gray-alpha-200);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Label beneath each circle */
+.stepLabel {
+  font-size: 11px;
+  text-transform: uppercase;
   color: var(--foreground);
 }
 
-.activeStep {
-  background: var(--foreground);
-  color: var(--background);
+/* State classes for progress steps */
+.active .stepCircle {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: #fff;
 }
-
-.completeStep {
-  background: var(--button-primary-hover);
-  color: var(--background);
+.complete .stepCircle {
+  background: rgba(0, 112, 243, 0.15);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+.upcoming .stepCircle {
+  background: var(--gray-alpha-100);
+  border-color: var(--gray-alpha-200);
+  color: var(--foreground);
 }
 
 /* Container for each form step */
@@ -156,7 +207,7 @@
   gap: 16px;
   width: 100%;
   margin-top: 16px;
-  background: var(--gray-alpha-100);
+  background: #ffffff;
   border: 1px solid var(--gray-alpha-200);
   border-radius: 8px;
   padding: 24px;
@@ -169,6 +220,38 @@
   gap: 4px;
   font-size: 14px;
   font-weight: 500;
+}
+
+/* Style for invalid input fields */
+.invalid {
+  border-color: #e24b4b !important;
+}
+
+/* Error message text */
+.error {
+  color: #e24b4b;
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+/* Phone input group for country code and number */
+.phoneGroup {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.phoneGroup select {
+  padding: 6px;
+  border-radius: 4px;
+  border: 1px solid var(--gray-alpha-200);
+  background: var(--background);
+  color: inherit;
+  font-size: 14px;
+}
+
+.phoneGroup input {
+  flex: 1;
 }
 
 .formStep input,
@@ -187,6 +270,8 @@
   gap: 16px;
 }
 
+
+/* Base button styles shared by navigation and export buttons */
 .navBtn,
 .exportBtn {
   appearance: none;
@@ -196,9 +281,14 @@
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  color: var(--background);
-  background: var(--foreground);
   transition: background 0.2s, transform 0.1s;
+}
+
+
+/* Specific style for navigation buttons */
+.navBtn {
+  background: var(--primary-color);
+  color: #fff;
 }
 
 /* Hover states for navigation buttons */
@@ -323,8 +413,8 @@
     padding: 16px;
   }
   .progressBar {
-    justify-content: flex-start;
-    gap: 4px;
+    justify-content: center;
+    gap: 8px;
     font-size: 10px;
   }
   .navBtn,

@@ -11,10 +11,16 @@ import styles from "./page.module.css";
 export default function Home() {
   // Form state holds all fields for the CV. Extra properties like
   // template and additional optional sections are included here.
+  // Form state holds all fields for the CV. Splitting the full name
+  // into first and last name allows for more granular validation and
+  // personalization. A country code select is provided for phone
+  // numbers to encourage proper international formatting.
   const [form, setForm] = useState({
-    name: "",
+    firstName: "",
+    lastName: "",
     title: "",
     email: "",
+    countryCode: "+31", // default to Netherlands
     phone: "",
     summary: "",
     education: "",
@@ -27,12 +33,54 @@ export default function Home() {
   // Current step in the wizard (0‑5). 0: personal, 1: summary,
   // 2: education, 3: experience, 4: skills & extras, 5: preview.
   const [step, setStep] = useState(0);
+  // Track validation error messages for individual fields. Keys
+  // correspond to form field names; values are the message to display.
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
   // Handler for updating form state.
+  /**
+   * Validates a single field and returns an error message if invalid.
+   * Empty strings indicate no error. Basic checks are applied here:
+   * - First and last names must contain letters only
+   * - Email must match a simple regex pattern
+   * - Phone must be numeric
+   */
+  const validateField = (name: string, value: string): string => {
+    switch (name) {
+      case "firstName":
+      case "lastName":
+        return value.trim().length === 0
+          ? "This field is required"
+          : /[^a-zA-Z\s'-]/.test(value)
+          ? "Only letters are allowed"
+          : "";
+      case "email":
+        return value.trim().length === 0
+          ? "Email is required"
+          : !/^[\w.!#$%&'*+/=?^_`{|}~-]+@[\w-]+(?:\.[\w-]+)+$/.test(value)
+          ? "Please enter a valid email address"
+          : "";
+      case "phone":
+        return value.trim().length === 0
+          ? "Phone number is required"
+          : /[^0-9\s-]/.test(value)
+          ? "Only digits, spaces and hyphens are allowed"
+          : "";
+      default:
+        return "";
+    }
+  };
+
+  // Update form state and validate the changed field
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+    // Perform validation for the field if applicable
+    const errorMsg = validateField(name, value);
+    setErrors((prev) => ({ ...prev, [name]: errorMsg }));
   };
   // Advance to the next step if possible.
   const nextStep = () => setStep((s) => Math.min(s + 1, 5));
@@ -47,13 +95,21 @@ export default function Home() {
         className={`${styles.preview} ${styles[form.template] || ""}`}
       >
         {/* Header */}
-        {form.name && <h1 className={styles.cvName}>{form.name}</h1>}
+        {(form.firstName || form.lastName) && (
+          <h1 className={styles.cvName}>
+            {[form.firstName, form.lastName].filter(Boolean).join(" ")}
+          </h1>
+        )}
         {form.title && <h2 className={styles.cvTitle}>{form.title}</h2>}
         {(form.email || form.phone) && (
           <p className={styles.cvContact}>
             {form.email && <span>{form.email}</span>}
             {form.email && form.phone && " | "}
-            {form.phone && <span>{form.phone}</span>}
+            {form.phone && (
+              <span>
+                {form.countryCode} {form.phone}
+              </span>
+            )}
           </p>
         )}
         {/* Summary */}
@@ -122,9 +178,20 @@ export default function Home() {
 
   // Determine whether the "Next" button should be disabled on each step.
   const isNextDisabled = useMemo(() => {
+    // Prevent progressing if there are validation errors on required fields.
+    const hasErrors = Object.entries(errors).some(
+      ([key, msg]) => msg && (step === 0 ? ["firstName", "lastName", "email", "phone"].includes(key) : true)
+    );
     switch (step) {
       case 0:
-        return !form.name || !form.title || !form.email || !form.phone;
+        return (
+          !form.firstName ||
+          !form.lastName ||
+          !form.title ||
+          !form.email ||
+          !form.phone ||
+          hasErrors
+        );
       case 1:
         return !form.summary;
       case 2:
@@ -136,7 +203,7 @@ export default function Home() {
       default:
         return false;
     }
-  }, [step, form]);
+  }, [step, form, errors]);
 
   return (
     <div className={styles.page}>
@@ -145,14 +212,18 @@ export default function Home() {
         <p>Create your resume step by step. Fill each section and progress to the next.</p>
         {/* Step indicator */}
         <ol className={styles.progressBar}>
-          {['Personal','Summary','Education','Experience','Skills','Preview'].map((label, idx) => (
-            <li
-              key={label}
-              className={`${styles.progressStep} ${step === idx ? styles.activeStep : step > idx ? styles.completeStep : ''}`}
-            >
-              {label}
-            </li>
-          ))}
+          {['Personal','Summary','Education','Experience','Skills','Preview'].map((label, idx) => {
+            const state = step === idx ? 'active' : step > idx ? 'complete' : 'upcoming';
+            return (
+              <li
+                key={label}
+                className={`${styles.progressStep} ${styles[state]}`}
+              >
+                <span className={styles.stepCircle}>{idx + 1}</span>
+                <span className={styles.stepLabel}>{label}</span>
+              </li>
+            );
+          })}
         </ol>
         {/* Render the appropriate form step */}
         <div className={styles.formStep}>
@@ -160,13 +231,30 @@ export default function Home() {
             <>
               <h2>Personal Details</h2>
               <label>
-                Full Name
+                First Name
                 <input
                   type="text"
-                  name="name"
-                  value={form.name}
+                  name="firstName"
+                  value={form.firstName}
                   onChange={handleChange}
+                  className={errors.firstName ? styles.invalid : ''}
                 />
+                {errors.firstName && (
+                  <span className={styles.error}>{errors.firstName}</span>
+                )}
+              </label>
+              <label>
+                Last Name
+                <input
+                  type="text"
+                  name="lastName"
+                  value={form.lastName}
+                  onChange={handleChange}
+                  className={errors.lastName ? styles.invalid : ''}
+                />
+                {errors.lastName && (
+                  <span className={styles.error}>{errors.lastName}</span>
+                )}
               </label>
               <label>
                 Professional Title
@@ -184,16 +272,34 @@ export default function Home() {
                   name="email"
                   value={form.email}
                   onChange={handleChange}
+                  className={errors.email ? styles.invalid : ''}
                 />
+                {errors.email && <span className={styles.error}>{errors.email}</span>}
               </label>
               <label>
                 Phone
-                <input
-                  type="tel"
-                  name="phone"
-                  value={form.phone}
-                  onChange={handleChange}
-                />
+                <div className={styles.phoneGroup}>
+                  <select
+                    name="countryCode"
+                    value={form.countryCode}
+                    onChange={handleChange}
+                  >
+                    <option value="+31">+31 🇳🇱</option>
+                    <option value="+1">+1 🇺🇸</option>
+                    <option value="+44">+44 🇬🇧</option>
+                    <option value="+33">+33 🇫🇷</option>
+                    <option value="+49">+49 🇩🇪</option>
+                  </select>
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={form.phone}
+                    onChange={handleChange}
+                    className={errors.phone ? styles.invalid : ''}
+                    placeholder="123 456 7890"
+                  />
+                </div>
+                {errors.phone && <span className={styles.error}>{errors.phone}</span>}
               </label>
             </>
           )}
