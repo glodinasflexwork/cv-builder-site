@@ -1,3 +1,4 @@
+/* Base page styles */
 .page {
   --gray-rgb: 0, 0, 0;
   --gray-alpha-200: rgba(var(--gray-rgb), 0.08);
@@ -6,14 +7,15 @@
   --button-primary-hover: #383838;
   --button-secondary-hover: #f2f2f2;
 
-  display: grid;
-  grid-template-rows: 20px 1fr 20px;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-items: center;
-  min-height: 100svh;
-  padding: 80px;
-  gap: 64px;
+  min-height: 100vh;
+  padding: 64px 32px;
+  gap: 48px;
   font-family: var(--font-geist-sans);
+  background: var(--background);
+  color: var(--foreground);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -27,69 +29,15 @@
   }
 }
 
+/* Main container constrains the width for readability */
 .main {
+  width: 100%;
+  max-width: 800px;
   display: flex;
   flex-direction: column;
   gap: 32px;
-  grid-row-start: 2;
 }
 
-.main ol {
-  font-family: var(--font-geist-mono);
-  padding-left: 0;
-  margin: 0;
-  font-size: 14px;
-  line-height: 24px;
-  letter-spacing: -0.01em;
-  list-style-position: inside;
-}
-
-.main li:not(:last-of-type) {
-  margin-bottom: 8px;
-}
-
-.main code {
-  font-family: inherit;
-  background: var(--gray-alpha-100);
-  padding: 2px 4px;
-  border-radius: 4px;
-  font-weight: 600;
-}
-
-.ctas {
-  display: flex;
-  gap: 16px;
-}
-
-.ctas a {
-  appearance: none;
-  border-radius: 128px;
-  height: 48px;
-  padding: 0 20px;
-  border: 1px solid transparent;
-  transition:
-    background 0.2s,
-    color 0.2s,
-    border-color 0.2s;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
-  line-height: 20px;
-  font-weight: 500;
-}
-
-a.primary {
-  background: var(--foreground);
-  color: var(--background);
-  gap: 8px;
-}
-
-a.secondary {
-  border-color: var(--gray-alpha-200);
-  min-width: 158px;
-}
 
 .footer {
   grid-row-start: 3;
@@ -180,6 +128,7 @@ a.secondary {
   justify-content: center;
   font-size: 12px;
   text-transform: uppercase;
+  flex-wrap: wrap;
 }
 
 .progressStep {
@@ -204,9 +153,14 @@ a.secondary {
 .formStep {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  max-width: 600px;
+  gap: 16px;
+  width: 100%;
   margin-top: 16px;
+  background: var(--gray-alpha-100);
+  border: 1px solid var(--gray-alpha-200);
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 2px 4px rgba(var(--gray-rgb), 0.05);
 }
 
 .formStep label {
@@ -244,7 +198,13 @@ a.secondary {
   cursor: pointer;
   color: var(--background);
   background: var(--foreground);
-  transition: background 0.2s;
+  transition: background 0.2s, transform 0.1s;
+}
+
+/* Hover states for navigation buttons */
+.navBtn:not(:disabled):hover {
+  background: var(--button-primary-hover);
+  transform: translateY(-1px);
 }
 
 .navBtn:disabled {
@@ -258,10 +218,12 @@ a.secondary {
   color: #fff;
   margin-top: 16px;
   align-self: flex-start;
+  box-shadow: 0 2px 4px rgba(0, 112, 243, 0.3);
 }
 
 .exportBtn:hover {
   background: #005bb5;
+  transform: translateY(-1px);
 }
 
 /* CV preview styles */
@@ -345,6 +307,30 @@ a.secondary {
   .footer a:hover {
     text-decoration: underline;
     text-underline-offset: 4px;
+  }
+}
+
+/* Responsive adjustments for small screens */
+@media (max-width: 600px) {
+  .page {
+    padding: 32px 16px;
+    gap: 32px;
+  }
+  .main {
+    gap: 24px;
+  }
+  .formStep {
+    padding: 16px;
+  }
+  .progressBar {
+    justify-content: flex-start;
+    gap: 4px;
+    font-size: 10px;
+  }
+  .navBtn,
+  .exportBtn {
+    width: 100%;
+    justify-content: center;
   }
 }
 
