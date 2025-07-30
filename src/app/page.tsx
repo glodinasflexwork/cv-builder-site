@@ -394,6 +394,20 @@ export default function Home() {
     'hobbies',
   ]);
 
+  // Controls whether each section should be visible in the final CV.  When
+  // unchecked, the corresponding section will be omitted from the preview
+  // and the exported PDF.  All sections are visible by default.  A
+  // checkbox next to each entry in the reorder list toggles its state.
+  const [sectionVisibility, setSectionVisibility] = useState<{ [key: string]: boolean }>({
+    education: true,
+    experience: true,
+    projects: true,
+    certifications: true,
+    skills: true,
+    languages: true,
+    hobbies: true,
+  });
+
   /**
    * Move a section up or down in the sectionOrder list. The index refers to
    * the current position of the section in the array and direction should
@@ -479,6 +493,8 @@ export default function Home() {
         )}
         {/* Render sections in user‑chosen order */}
         {sectionOrder.map((sectionName) => {
+          // Skip sections that are marked as hidden
+          if (!sectionVisibility[sectionName]) return null;
           switch (sectionName) {
             case 'education':
               return (
@@ -580,7 +596,7 @@ export default function Home() {
         })}
       </div>
     );
-  }, [form, sectionOrder]);
+  }, [form, sectionOrder, sectionVisibility]);
 
   // Export the current CV preview to PDF using html2canvas and jspdf.
   const exportPDF = async () => {
@@ -626,6 +642,15 @@ export default function Home() {
       'languages',
       'hobbies',
     ]);
+    setSectionVisibility({
+      education: true,
+      experience: true,
+      projects: true,
+      certifications: true,
+      skills: true,
+      languages: true,
+      hobbies: true,
+    });
     setErrors({});
     setExpSugToggles([]);
     setNewSkill('');
@@ -638,7 +663,7 @@ export default function Home() {
    * The file is generated on the fly and downloaded via a temporary link.
    */
   const exportJSON = () => {
-    const data = { form, sectionOrder };
+    const data = { form, sectionOrder, sectionVisibility };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -664,6 +689,7 @@ export default function Home() {
         const parsed = JSON.parse(evt.target?.result as string);
         if (parsed.form) setForm(parsed.form);
         if (parsed.sectionOrder) setSectionOrder(parsed.sectionOrder);
+        if (parsed.sectionVisibility) setSectionVisibility(parsed.sectionVisibility);
       } catch {
         // ignore invalid JSON
       }
@@ -767,6 +793,8 @@ export default function Home() {
         const parsed = JSON.parse(saved);
         if (parsed.form) setForm(parsed.form);
         if (parsed.sectionOrder) setSectionOrder(parsed.sectionOrder);
+        // Load saved visibility preferences if present
+        if (parsed.sectionVisibility) setSectionVisibility(parsed.sectionVisibility);
       }
     } catch {
       // Ignore any JSON parsing errors
@@ -778,14 +806,14 @@ export default function Home() {
       try {
         localStorage.setItem(
           "cvBuilderData",
-          JSON.stringify({ form, sectionOrder })
+          JSON.stringify({ form, sectionOrder, sectionVisibility })
         );
       } catch {
         // localStorage might be unavailable in some contexts; ignore errors
       }
     }, 300);
     return () => clearTimeout(timer);
-  }, [form, sectionOrder]);
+  }, [form, sectionOrder, sectionVisibility]);
 
   // Per‑experience toggles for showing description suggestions. When an entry
   // is added or removed, the corresponding boolean is added or removed from
@@ -1539,7 +1567,20 @@ export default function Home() {
                     };
                     return (
                       <li key={sec} className={styles.reorderItem}>
-                        <span>{labelMap[sec] || sec}</span>
+                        {/* Visibility toggle checkbox for this section */}
+                        <label className={styles.visibilityToggle}>
+                          <input
+                            type="checkbox"
+                            checked={sectionVisibility[sec] ?? true}
+                            onChange={() =>
+                              setSectionVisibility((prev) => ({
+                                ...prev,
+                                [sec]: !prev[sec],
+                              }))
+                            }
+                          />
+                          <span>{labelMap[sec] || sec}</span>
+                        </label>
                         <div className={styles.reorderButtons}>
                           <button
                             type="button"

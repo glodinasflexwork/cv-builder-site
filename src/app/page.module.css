@@ -741,6 +741,16 @@
   font-size: 14px;
 }
 
+/* A label wrapping the visibility checkbox and its text. Use flex so the
+   checkbox and label align nicely on a single row with consistent spacing. */
+.visibilityToggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
 .reorderButtons button {
   background: none;
   border: none;
