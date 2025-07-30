@@ -220,6 +220,59 @@ export default function Home() {
   };
 
   /**
+   * Helpers to reorder items within dynamic lists. Users may want to
+   * reorder education, experience, projects or certifications entries.
+   * These helpers move an item up or down within its list.
+   */
+  const moveEducationEntry = (index: number, direction: -1 | 1) => {
+    setForm((prev) => {
+      const list = [...prev.educationList];
+      const newIndex = index + direction;
+      if (newIndex < 0 || newIndex >= list.length) return prev;
+      const [item] = list.splice(index, 1);
+      list.splice(newIndex, 0, item);
+      return { ...prev, educationList: list };
+    });
+  };
+  const moveExperienceEntry = (index: number, direction: -1 | 1) => {
+    setForm((prev) => {
+      const list = [...prev.experienceList];
+      const newIndex = index + direction;
+      if (newIndex < 0 || newIndex >= list.length) return prev;
+      const [item] = list.splice(index, 1);
+      list.splice(newIndex, 0, item);
+      return { ...prev, experienceList: list };
+    });
+    // Also reorder the corresponding suggestion toggle array
+    setExpSugToggles((prev) => {
+      const arr = [...prev];
+      const [flag] = arr.splice(index, 1);
+      arr.splice(index + direction, 0, flag);
+      return arr;
+    });
+  };
+  const moveProjectEntry = (index: number, direction: -1 | 1) => {
+    setForm((prev) => {
+      const list = [...prev.projectsList];
+      const newIndex = index + direction;
+      if (newIndex < 0 || newIndex >= list.length) return prev;
+      const [item] = list.splice(index, 1);
+      list.splice(newIndex, 0, item);
+      return { ...prev, projectsList: list };
+    });
+  };
+  const moveCertificationEntry = (index: number, direction: -1 | 1) => {
+    setForm((prev) => {
+      const list = [...prev.certificationsList];
+      const newIndex = index + direction;
+      if (newIndex < 0 || newIndex >= list.length) return prev;
+      const [item] = list.splice(index, 1);
+      list.splice(newIndex, 0, item);
+      return { ...prev, certificationsList: list };
+    });
+  };
+
+  /**
    * Skills list management helpers
    * Store skills as a simple string array. Users can add skills via an
    * input field or by selecting from the suggestion list. Removing a
@@ -878,7 +931,7 @@ export default function Home() {
               <h2>Education</h2>
               {form.educationList.map((edu, idx) => (
                 <div key={idx} className={styles.eduRow}>
-                  <input
+                    <input
                     type="text"
                     placeholder="Degree (e.g. BSc Computer Science)"
                     value={edu.degree}
@@ -896,6 +949,23 @@ export default function Home() {
                       value={edu.year}
                       onChange={(e) => updateEducation(idx, "year", e.target.value)}
                     />
+                    {/* Reorder controls for education entries */}
+                    <div className={styles.reorderButtons}>
+                      <button
+                        type="button"
+                        onClick={() => moveEducationEntry(idx, -1)}
+                        disabled={idx === 0}
+                      >
+                        ↑
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => moveEducationEntry(idx, 1)}
+                        disabled={idx === form.educationList.length - 1}
+                      >
+                        ↓
+                      </button>
+                    </div>
                     <button
                       type="button"
                       onClick={() => removeEducation(idx)}
@@ -953,6 +1023,23 @@ export default function Home() {
                   >
                     {expSugToggles[idx] ? 'Hide' : 'Show'} Description Suggestions
                   </button>
+                  {/* Reorder controls for experience entries */}
+                  <div className={styles.reorderButtons}>
+                    <button
+                      type="button"
+                      onClick={() => moveExperienceEntry(idx, -1)}
+                      disabled={idx === 0}
+                    >
+                      ↑
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => moveExperienceEntry(idx, 1)}
+                      disabled={idx === form.experienceList.length - 1}
+                    >
+                      ↓
+                    </button>
+                  </div>
                   {expSugToggles[idx] && (
                     <ul className={styles.suggestionsList}>
                       {experienceSuggestions.map((sugg, sIdx) => (
@@ -1202,6 +1289,23 @@ export default function Home() {
                       onChange={(e) => updateProject(idx, 'description', e.target.value)}
                       rows={2}
                     />
+                    {/* Reorder controls for projects */}
+                    <div className={styles.reorderButtons}>
+                      <button
+                        type="button"
+                        onClick={() => moveProjectEntry(idx, -1)}
+                        disabled={idx === 0}
+                      >
+                        ↑
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => moveProjectEntry(idx, 1)}
+                        disabled={idx === form.projectsList.length - 1}
+                      >
+                        ↓
+                      </button>
+                    </div>
                     <button
                       type="button"
                       onClick={() => removeProject(idx)}
@@ -1239,6 +1343,23 @@ export default function Home() {
                       value={cert.year}
                       onChange={(e) => updateCertification(idx, 'year', e.target.value)}
                     />
+                    {/* Reorder controls for certifications */}
+                    <div className={styles.reorderButtons}>
+                      <button
+                        type="button"
+                        onClick={() => moveCertificationEntry(idx, -1)}
+                        disabled={idx === 0}
+                      >
+                        ↑
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => moveCertificationEntry(idx, 1)}
+                        disabled={idx === form.certificationsList.length - 1}
+                      >
+                        ↓
+                      </button>
+                    </div>
                     <button
                       type="button"
                       onClick={() => removeCertification(idx)}
