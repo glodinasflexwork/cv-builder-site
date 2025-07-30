@@ -197,6 +197,56 @@ export default function Home() {
   // Show/hide flag for summary suggestion list.
   const [showSummarySuggestions, setShowSummarySuggestions] = useState(false);
 
+  // Suggestions for skills, languages and hobbies. Research shows that the most
+  // in‑demand soft skills include communication, teamwork, problem‑solving,
+  // leadership, adaptability, creativity, time management, interpersonal
+  // skills, work ethic and attention to detail【391520590269652†L139-L152】. For
+  // hobbies, volunteering/community involvement, writing, blogging, learning
+  // languages, photography, travel, sports, reading, making music, yoga, art
+  // and dance are recommended because they convey transferable skills like
+  // empathy, communication, creativity and adaptability【467089876964209†L170-L301】.
+  // Language suggestions include some of the most requested languages in job
+  // postings – French, Spanish and Chinese (Mandarin/Cantonese)【442256276186923†L33-L39】 –
+  // along with other common European languages to give users a starting point.
+  const skillSuggestions: string[] = [
+    "Communication",
+    "Teamwork",
+    "Problem-solving",
+    "Leadership",
+    "Adaptability",
+    "Creativity",
+    "Time management",
+    "Attention to detail",
+    "Interpersonal skills",
+    "Work ethic",
+  ];
+  const languageSuggestions: string[] = [
+    "English (native)",
+    "French (fluent)",
+    "Spanish (fluent)",
+    "Chinese – Mandarin (conversational)",
+    "German (intermediate)",
+    "Dutch (basic)",
+    "Italian (intermediate)",
+  ];
+  const hobbySuggestions: string[] = [
+    "Volunteering",
+    "Writing",
+    "Blogging",
+    "Learning languages",
+    "Photography",
+    "Traveling",
+    "Sports (e.g. soccer)",
+    "Reading",
+    "Making music",
+    "Yoga",
+    "Art",
+    "Dance",
+  ];
+  const [showSkillSuggestions, setShowSkillSuggestions] = useState(false);
+  const [showLanguageSuggestions, setShowLanguageSuggestions] = useState(false);
+  const [showHobbySuggestions, setShowHobbySuggestions] = useState(false);
+
   // Determine whether the "Next" button should be disabled on each step.
   const isNextDisabled = useMemo(() => {
     // Prevent progressing if there are validation errors on required fields.
@@ -406,6 +456,40 @@ export default function Home() {
                   rows={3}
                   placeholder="List your key skills separated by commas"
                 />
+                {/* Show skill suggestions toggle */}
+                <button
+                  type="button"
+                  className={styles.suggestionBtn}
+                  onClick={() => setShowSkillSuggestions((show) => !show)}
+                >
+                  {showSkillSuggestions ? "Hide" : "Show"} Skill Suggestions
+                </button>
+                {showSkillSuggestions && (
+                  <ul className={styles.suggestionsList}>
+                    {skillSuggestions.map((skill, idx) => (
+                      <li
+                        key={idx}
+                        onClick={() => {
+                          setForm((prev) => {
+                            // Append suggestion if not already present (case-insensitive)
+                            const existing = prev.skills
+                              .split(/,\s*/)
+                              .map((s) => s.trim().toLowerCase())
+                              .filter(Boolean);
+                            if (existing.includes(skill.toLowerCase())) return prev;
+                            const newSkills = prev.skills
+                              ? `${prev.skills}, ${skill}`
+                              : skill;
+                            return { ...prev, skills: newSkills };
+                          });
+                          setShowSkillSuggestions(false);
+                        }}
+                      >
+                        {skill}
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </label>
               <label>
                 Languages (optional)
@@ -416,6 +500,38 @@ export default function Home() {
                   rows={2}
                   placeholder="e.g. English (native), Dutch (fluent)"
                 />
+                <button
+                  type="button"
+                  className={styles.suggestionBtn}
+                  onClick={() => setShowLanguageSuggestions((show) => !show)}
+                >
+                  {showLanguageSuggestions ? "Hide" : "Show"} Language Suggestions
+                </button>
+                {showLanguageSuggestions && (
+                  <ul className={styles.suggestionsList}>
+                    {languageSuggestions.map((lang, idx) => (
+                      <li
+                        key={idx}
+                        onClick={() => {
+                          setForm((prev) => {
+                            const existing = prev.languages
+                              .split(/,\s*/)
+                              .map((s) => s.trim().toLowerCase())
+                              .filter(Boolean);
+                            if (existing.includes(lang.toLowerCase())) return prev;
+                            const newLangs = prev.languages
+                              ? `${prev.languages}, ${lang}`
+                              : lang;
+                            return { ...prev, languages: newLangs };
+                          });
+                          setShowLanguageSuggestions(false);
+                        }}
+                      >
+                        {lang}
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </label>
               <label>
                 Hobbies (optional)
@@ -426,6 +542,38 @@ export default function Home() {
                   rows={2}
                   placeholder="e.g. Photography, cycling, volunteering"
                 />
+                <button
+                  type="button"
+                  className={styles.suggestionBtn}
+                  onClick={() => setShowHobbySuggestions((show) => !show)}
+                >
+                  {showHobbySuggestions ? "Hide" : "Show"} Hobby Suggestions
+                </button>
+                {showHobbySuggestions && (
+                  <ul className={styles.suggestionsList}>
+                    {hobbySuggestions.map((hobby, idx) => (
+                      <li
+                        key={idx}
+                        onClick={() => {
+                          setForm((prev) => {
+                            const existing = prev.hobbies
+                              .split(/,\s*/)
+                              .map((s) => s.trim().toLowerCase())
+                              .filter(Boolean);
+                            if (existing.includes(hobby.toLowerCase())) return prev;
+                            const newHobbies = prev.hobbies
+                              ? `${prev.hobbies}, ${hobby}`
+                              : hobby;
+                            return { ...prev, hobbies: newHobbies };
+                          });
+                          setShowHobbySuggestions(false);
+                        }}
+                      >
+                        {hobby}
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </label>
               <label>
                 Template Style
