@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import styles from "./page.module.css";
 
 /**
@@ -9,55 +9,38 @@ import styles from "./page.module.css";
  * between steps, pick from simple templates and export their CV to PDF.
  */
 export default function Home() {
+  // Define the initial form structure outside of state so it can be reused
+  // when resetting the form. This includes all default values.
+  const initialForm = {
+    firstName: "",
+    lastName: "",
+    title: "",
+    email: "",
+    countryCode: "+31",
+    phone: "",
+    summary: "",
+    educationList: [] as { institution: string; degree: string; year: string }[],
+    experienceList: [] as { role: string; company: string; period: string; description: string }[],
+    skillsList: [] as string[],
+    languagesList: [] as { language: string; level: string }[],
+    hobbiesList: [] as string[],
+    projectsList: [] as { title: string; description: string }[],
+    certificationsList: [] as { name: string; issuer: string; year: string }[],
+    linkedin: "",
+    website: "",
+    accentColor: "#0070f3",
+    template: "professional",
+    fontFamily: "sans",
+    profileImage: null as string | null,
+  };
+
   // Form state holds all fields for the CV. Extra properties like
   // template and additional optional sections are included here.
   // Form state holds all fields for the CV. Splitting the full name
   // into first and last name allows for more granular validation and
   // personalization. A country code select is provided for phone
   // numbers to encourage proper international formatting.
-  const [form, setForm] = useState({
-    firstName: "",
-    lastName: "",
-    title: "",
-    email: "",
-    countryCode: "+31", // default to Netherlands
-    phone: "",
-    summary: "",
-    /**
-     * Dynamic lists for structured resume sections. Instead of storing
-     * large text blobs, the app now captures structured data for education
-     * and work history. Each education entry includes a degree, institution
-     * and year range. Each experience entry includes a role, company,
-     * period and description. Skills, languages and hobbies are stored as
-     * arrays of simple values or objects. This design simplifies editing
-     * and produces cleaner output in the preview and PDF.
-     */
-    educationList: [] as { institution: string; degree: string; year: string }[],
-    experienceList: [] as { role: string; company: string; period: string; description: string }[],
-    skillsList: [] as string[],
-    languagesList: [] as { language: string; level: string }[],
-    hobbiesList: [] as string[],
-    /** Dynamic projects list: each project includes a title and description */
-    projectsList: [] as { title: string; description: string }[],
-    /** Dynamic certifications list: each certification has a name, issuer and year */
-    certificationsList: [] as { name: string; issuer: string; year: string }[],
-    /** Optional contact fields */
-    linkedin: "",
-    website: "",
-    /** Custom accent colour for the UI */
-    accentColor: "#0070f3",
-    template: "professional", // default template
-    /**
-     * Allow users to customise the typeface used in the preview. A small
-     * selection of font families is offered to accommodate different
-     * tastes and industries. The default is sans‑serif. You can expand
-     * this list in the future or even let users upload their own fonts.
-     */
-    fontFamily: "sans", // one of: 'sans', 'serif', 'mono'
-    /** Optional profile image stored as a data URL. Allows users to upload
-     * a headshot that appears at the top of the resume. */
-    profileImage: null as string | null,
-  });
+  const [form, setForm] = useState(initialForm);
   // Current step in the wizard (0‑5). 0: personal, 1: summary,
   // 2: education, 3: experience, 4: skills & extras, 5: preview.
   const [step, setStep] = useState(0);
@@ -625,6 +608,71 @@ export default function Home() {
 
   // Year for footer copyright.
   const currentYear = new Date().getFullYear();
+
+  /**
+   * Reset all data back to defaults. Clears all form fields, lists,
+   * section order, errors and suggestion toggles. This allows users
+   * to start over without refreshing the page. Local storage will be
+   * updated automatically by the existing effect.
+   */
+  const resetAll = () => {
+    setForm(initialForm);
+    setSectionOrder([
+      'education',
+      'experience',
+      'projects',
+      'certifications',
+      'skills',
+      'languages',
+      'hobbies',
+    ]);
+    setErrors({});
+    setExpSugToggles([]);
+    setNewSkill('');
+    setNewHobby('');
+    setStep(0);
+  };
+
+  /**
+   * Export the current resume data (form and section order) as a JSON file.
+   * The file is generated on the fly and downloaded via a temporary link.
+   */
+  const exportJSON = () => {
+    const data = { form, sectionOrder };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'cv-data.json';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  /**
+   * Import resume data from a JSON file. When a file is selected, parse
+   * the JSON and, if valid, update the form and section order. Errors
+   * during parsing are silently ignored.
+   */
+  const importJSON = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const parsed = JSON.parse(evt.target?.result as string);
+        if (parsed.form) setForm(parsed.form);
+        if (parsed.sectionOrder) setSectionOrder(parsed.sectionOrder);
+      } catch {
+        // ignore invalid JSON
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  // Ref to trigger the hidden import file input
+  const importRef = useRef<HTMLInputElement | null>(null);
 
   // Predefined suggestions for the professional summary. These sample
   // descriptions follow guidance from resume writing resources: use strong
@@ -1520,6 +1568,38 @@ export default function Home() {
               <h2>Preview & Export</h2>
               {preview}
               <button className={styles.exportBtn} onClick={exportPDF}>Export to PDF</button>
+              {/* Additional export/import/reset controls */}
+              <div style={{ marginTop: '12px', display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
+                <button
+                  type="button"
+                  className={styles.navBtn}
+                  onClick={exportJSON}
+                >
+                  Export Data (JSON)
+                </button>
+                <button
+                  type="button"
+                  className={styles.navBtn}
+                  onClick={() => importRef.current?.click()}
+                >
+                  Import Data
+                </button>
+                <button
+                  type="button"
+                  className={styles.navBtn}
+                  onClick={resetAll}
+                >
+                  Reset Form
+                </button>
+                {/* Hidden input for importing JSON */}
+                <input
+                  type="file"
+                  accept="application/json"
+                  ref={importRef}
+                  style={{ display: 'none' }}
+                  onChange={importJSON}
+                />
+              </div>
             </>
           )}
         </div>
