@@ -24,7 +24,7 @@ export default function Home() {
     skillsList: [] as string[],
     languagesList: [] as { language: string; level: string }[],
     hobbiesList: [] as string[],
-    projectsList: [] as { title: string; description: string }[],
+    projectsList: [] as { title: string; description: string; url?: string }[],
     certificationsList: [] as { name: string; issuer: string; year: string }[],
     linkedin: "",
     website: "",
@@ -324,12 +324,12 @@ export default function Home() {
   const addProject = () => {
     setForm((prev) => ({
       ...prev,
-      projectsList: [...prev.projectsList, { title: "", description: "" }],
+      projectsList: [...prev.projectsList, { title: "", description: "", url: "" }],
     }));
   };
   const updateProject = (
     index: number,
-    key: "title" | "description",
+    key: "title" | "description" | "url",
     value: string
   ) => {
     setForm((prev) => {
@@ -569,6 +569,14 @@ export default function Home() {
                     {form.projectsList.map((proj, idx) => (
                       <p key={idx}>
                         <strong>{proj.title}</strong>
+                        {proj.url && (
+                          <>
+                            {' '}
+                            <a href={proj.url} target="_blank" rel="noopener noreferrer">
+                              [{proj.url.replace(/https?:\/\//, '')}]
+                            </a>
+                          </>
+                        )}
                         {proj.description && ` – ${proj.description}`}
                       </p>
                     ))}
@@ -815,6 +823,7 @@ export default function Home() {
     return () => clearTimeout(timer);
   }, [form, sectionOrder, sectionVisibility]);
 
+
   // Per‑experience toggles for showing description suggestions. When an entry
   // is added or removed, the corresponding boolean is added or removed from
   // this array so that each experience has its own show/hide state.
@@ -824,6 +833,59 @@ export default function Home() {
   // value typed into the input before it is added to the corresponding list.
   const [newSkill, setNewSkill] = useState("");
   const [newHobby, setNewHobby] = useState("");
+
+  // Cover letter state: holds the generated or user-edited cover letter and
+  // whether the cover letter text area is visible. The letter is created
+  // when the user clicks "Generate Cover Letter" in the preview step.
+  const [coverLetter, setCoverLetter] = useState('');
+  const [showCoverLetter, setShowCoverLetter] = useState(false);
+
+  // State for ATS keyword checking. Users can paste a job description and we
+  // will analyse which keywords are missing from their resume. The missing
+  // keywords can then be added to the summary or skills section. This is a
+  // simplified alternative to an ATS resume checker described in best
+  // practices【205442639117747†L324-L344】.
+  const [jobDescription, setJobDescription] = useState("");
+  const [missingKeywords, setMissingKeywords] = useState<string[]>([]);
+
+  // Common stop words to exclude from keyword matching. These words are too
+  // generic to be useful in a resume context.
+  const stopWords = new Set([
+    'the','and','for','with','from','that','this','these','those','have','has','had','will','would','shall','should','can','could','a','an','in','on','to','of','it','is','are','was','were','be','as','at','by','or','we','you','your','our','us','they','them','their','he','she','his','her','its','but','if','about','than','into','out','up','down','who','what','when','where','why','how'
+  ]);
+
+  // Whenever the job description changes, compute the list of keywords that
+  // appear in the description but not in the user's resume. The resume
+  // content includes the summary, skills and experience descriptions.
+  useEffect(() => {
+    if (!jobDescription.trim()) {
+      setMissingKeywords([]);
+      return;
+    }
+    // Normalize job description: lowercase, remove punctuation
+    const jdWords = jobDescription
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .split(/\s+/)
+      .filter((w) => w.length > 3 && !stopWords.has(w));
+    const jdSet = new Set(jdWords);
+    // Compile resume content
+    const resumeText = [
+      form.summary,
+      form.skillsList.join(' '),
+      ...form.experienceList.map((exp) => `${exp.role} ${exp.company} ${exp.description}`),
+      ...form.educationList.map((edu) => `${edu.degree} ${edu.institution}`),
+      form.hobbiesList.join(' '),
+    ]
+      .join(' ')
+      .toLowerCase();
+    // Determine missing keywords
+    const missing: string[] = [];
+    jdSet.forEach((word) => {
+      if (!resumeText.includes(word)) missing.push(word);
+    });
+    setMissingKeywords(missing);
+  }, [jobDescription, form, stopWords]);
 
   // Determine whether the "Next" button should be disabled on each step.
   const isNextDisabled = useMemo(() => {
@@ -856,6 +918,23 @@ export default function Home() {
         return false;
     }
   }, [step, form, errors]);
+
+  // Keyboard shortcut: allow users to advance to the next step with Ctrl+Enter
+  // when the current step's requirements are met. This improves
+  // accessibility for keyboard users and speeds up navigation.
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.key === 'Enter') {
+        if (!isNextDisabled && step < 5) {
+          nextStep();
+        }
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => {
+      window.removeEventListener('keydown', handler);
+    };
+  }, [isNextDisabled, step]);
 
   return (
     <div
@@ -1271,10 +1350,22 @@ export default function Home() {
                       placeholder="Language"
                       value={lang.language}
                       onChange={(e) => updateLanguage(idx, "language", e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          addLanguage();
+                        }
+                      }}
                     />
                     <select
                       value={lang.level}
                       onChange={(e) => updateLanguage(idx, "level", e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          addLanguage();
+                        }
+                      }}
                     >
                       <option value="">Level</option>
                       <option value="Beginner">Beginner</option>
@@ -1396,6 +1487,12 @@ export default function Home() {
                       placeholder="Project Title"
                       value={proj.title}
                       onChange={(e) => updateProject(idx, 'title', e.target.value)}
+                    />
+                    <input
+                      type="url"
+                      placeholder="Project URL (optional)"
+                      value={proj.url || ''}
+                      onChange={(e) => updateProject(idx, 'url', e.target.value)}
                     />
                     <textarea
                       placeholder="Description"
@@ -1609,6 +1706,51 @@ export default function Home() {
               <h2>Preview & Export</h2>
               {preview}
               <button className={styles.exportBtn} onClick={exportPDF}>Export to PDF</button>
+              {/* ATS keyword checker */}
+              <div className={styles.atsChecker}>
+                <h3>Job Description (optional)</h3>
+                <textarea
+                  placeholder="Paste a job description to see which keywords are missing from your resume"
+                  value={jobDescription}
+                  onChange={(e) => setJobDescription(e.target.value)}
+                  rows={4}
+                  style={{ width: '100%', marginBottom: '8px' }}
+                />
+                {missingKeywords.length > 0 && (
+                  <p style={{ fontSize: '14px' }}>
+                    <strong>Missing keywords:</strong> {missingKeywords.join(', ')}
+                  </p>
+                )}
+              </div>
+              {/* Cover letter generator */}
+              <div className={styles.coverLetterSection}>
+                <h3>Cover Letter (optional)</h3>
+                <button
+                  type="button"
+                  className={styles.suggestionBtn}
+                  onClick={() => {
+                    // Generate a simple cover letter using the user's details and summary
+                    const name = [form.firstName, form.lastName].filter(Boolean).join(' ');
+                    const summary = form.summary || 'I am excited to apply for this position.';
+                    const salutation = 'Dear Hiring Manager,';
+                    const body = `${summary} I believe my experience and skills make me a strong fit for this role.`;
+                    const closing = 'Thank you for your consideration. I look forward to the opportunity to discuss my qualifications further.';
+                    const signoff = `Sincerely,\n${name}`;
+                    setCoverLetter(`${salutation}\n\n${body}\n\n${closing}\n\n${signoff}`);
+                    setShowCoverLetter(true);
+                  }}
+                >
+                  Generate Cover Letter
+                </button>
+                {showCoverLetter && (
+                  <textarea
+                    value={coverLetter}
+                    onChange={(e) => setCoverLetter(e.target.value)}
+                    rows={6}
+                    style={{ width: '100%', marginTop: '8px' }}
+                  />
+                )}
+              </div>
               {/* Additional export/import/reset controls */}
               <div style={{ marginTop: '12px', display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
                 <button

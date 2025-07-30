@@ -751,6 +751,23 @@
   font-weight: 500;
 }
 
+/* ATS checker and cover letter sections in the preview step */
+.atsChecker,
+.coverLetterSection {
+  margin-top: 16px;
+  padding: 12px;
+  border: 1px solid var(--gray-alpha-200);
+  border-radius: 6px;
+  background: var(--gray-alpha-100);
+}
+
+.atsChecker h3,
+.coverLetterSection h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
 .reorderButtons button {
   background: none;
   border: none;
