@@ -19,7 +19,8 @@
   font-family: var(--font-geist-sans);
   /* Light background for a more inviting look */
   background: #f5f8ff;
-  color: var(--foreground);
+  /* Always use a dark foreground colour to ensure high contrast, even in dark mode */
+  color: #222;
   /* Primary accent color used throughout the UI */
   --primary-color: #0070f3;
 }
@@ -32,6 +33,9 @@
 
     --button-primary-hover: #ccc;
     --button-secondary-hover: #1a1a1a;
+    /* Use a dark background in dark mode to maintain contrast with light text */
+    background: #0a0a0a;
+    color: #ededed;
   }
 }
 
@@ -519,6 +523,30 @@
 @media (prefers-color-scheme: dark) {
   .logo {
     filter: invert();
+  }
+
+  /* Dark mode adjustments for form and cards. Without these overrides the
+     default light backgrounds make text nearly invisible on dark devices. */
+  .formStep {
+    background: #141414;
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+  .templateCard {
+    background: #141414;
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+  .templatePreview {
+    background: #1e1e1e;
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+  .reorderItem {
+    background: #141414;
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+  .skillChip,
+  .hobbyChip {
+    background: rgba(var(--gray-rgb), 0.15);
+    border-color: rgba(var(--gray-rgb), 0.3);
   }
 }
 
