@@ -267,6 +267,12 @@
   font-size: 14px;
 }
 
+/* Improve contrast of placeholder text to make example hints easier to read */
+.formStep input::placeholder,
+.formStep textarea::placeholder {
+  color: rgba(var(--gray-rgb), 0.5);
+}
+
 .buttons {
   margin-top: 24px;
   display: flex;
@@ -583,6 +589,182 @@
 .removeChipBtn {
   font-size: 16px;
   margin-left: 4px;
+}
+
+/* ----------------------------------------------------------------------- */
+/* Template selector styles                                                 */
+/* ----------------------------------------------------------------------- */
+
+/* Container for template preview cards */
+.templateSelector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+/* Each template card represents a selectable design. Cards show a small
+   preview of the resume style and a label. On hover they subtly lift and
+   change border colour. */
+.templateCard {
+  flex: 1;
+  min-width: 120px;
+  max-width: 160px;
+  border: 1px solid var(--gray-alpha-200);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: transform 0.1s, border-color 0.2s;
+}
+
+/* Highlight the selected card */
+.templateCardSelected {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(0, 112, 243, 0.2);
+}
+
+/* Mini preview inside each card */
+.templatePreview {
+  width: 100%;
+  height: 60px;
+  border: 1px solid var(--gray-alpha-200);
+  border-radius: 4px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  background: var(--gray-alpha-100);
+  color: var(--foreground);
+  font-size: 8px;
+}
+
+.templateLabel {
+  font-size: 12px;
+  text-align: center;
+  font-weight: 500;
+  color: var(--foreground);
+}
+
+/* Visually hide the fallback select but keep it accessible */
+.templateSelectLabel {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  border: 0;
+}
+
+.templateSelect {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  border: 0;
+}
+
+/* ----------------------------------------------------------------------- */
+/* Section reordering styles                                                */
+/* ----------------------------------------------------------------------- */
+
+.reorderContainer {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.reorderList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.reorderItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 8px;
+  border: 1px solid var(--gray-alpha-200);
+  border-radius: 4px;
+  background: var(--gray-alpha-100);
+  font-size: 14px;
+}
+
+.reorderButtons button {
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0 4px;
+}
+
+.reorderButtons button:disabled {
+  color: rgba(var(--gray-rgb), 0.3);
+  cursor: default;
+}
+
+/* ----------------------------------------------------------------------- */
+/* Mobile readability improvements                                          */
+/* ----------------------------------------------------------------------- */
+
+@media (max-width: 600px) {
+  /* Increase base font sizes for better readability on small screens */
+  .page {
+    font-size: 16px;
+  }
+  /* Make labels more prominent on mobile */
+  .formStep label {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--foreground);
+  }
+  /* Increase font sizes for the progress bar */
+  .progressStep {
+    font-size: 11px;
+  }
+  .stepCircle {
+    width: 26px;
+    height: 26px;
+    font-size: 12px;
+  }
+  .stepLabel {
+    font-size: 10px;
+  }
+  /* Larger text in the CV preview when viewed on small screens */
+  .cvName {
+    font-size: 22px;
+  }
+  .cvTitle {
+    font-size: 16px;
+  }
+  .cvSection h3 {
+    font-size: 15px;
+  }
+  .cvSection p {
+    font-size: 13px;
+  }
+  /* Ensure template cards wrap nicely on small screens */
+  .templateCard {
+    max-width: 48%;
+  }
+  .templatePreview {
+    height: 50px;
+  }
 }
 
 /* Lists and chips for skills and hobbies */
