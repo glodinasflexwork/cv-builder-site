@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import styles from "./page.module.css";
 
 /**
@@ -37,7 +37,23 @@ export default function Home() {
     skillsList: [] as string[],
     languagesList: [] as { language: string; level: string }[],
     hobbiesList: [] as string[],
+    /** Dynamic projects list: each project includes a title and description */
+    projectsList: [] as { title: string; description: string }[],
+    /** Dynamic certifications list: each certification has a name, issuer and year */
+    certificationsList: [] as { name: string; issuer: string; year: string }[],
+    /** Optional contact fields */
+    linkedin: "",
+    website: "",
+    /** Custom accent colour for the UI */
+    accentColor: "#0070f3",
     template: "professional", // default template
+    /**
+     * Allow users to customise the typeface used in the preview. A small
+     * selection of font families is offered to accommodate different
+     * tastes and industries. The default is sans‑serif. You can expand
+     * this list in the future or even let users upload their own fonts.
+     */
+    fontFamily: "sans", // one of: 'sans', 'serif', 'mono'
   });
   // Current step in the wizard (0‑5). 0: personal, 1: summary,
   // 2: education, 3: experience, 4: skills & extras, 5: preview.
@@ -74,6 +90,14 @@ export default function Home() {
           : /[^0-9\s-]/.test(value)
           ? "Only digits, spaces and hyphens are allowed"
           : "";
+      case "linkedin":
+      case "website":
+        // Optional fields: if provided, validate basic URL pattern
+        if (!value.trim()) return "";
+        // Simple URL validation: must start with http(s) and contain at least one dot
+        return /^https?:\/\/.+\..+/.test(value)
+          ? ""
+          : "Please enter a valid URL (starting with http(s)://)";
       default:
         return "";
     }
@@ -171,6 +195,8 @@ export default function Home() {
         { role: "", company: "", period: "", description: "" },
       ],
     }));
+    // When adding a new experience, also push a false flag to the suggestion toggles
+    setExpSugToggles((prev) => [...prev, false]);
   };
   const updateExperience = (
     index: number,
@@ -189,6 +215,8 @@ export default function Home() {
       const newList = prev.experienceList.filter((_, idx) => idx !== index);
       return { ...prev, experienceList: newList };
     });
+    // Remove the corresponding toggle entry as well
+    setExpSugToggles((prev) => prev.filter((_, idx) => idx !== index));
   };
 
   /**
@@ -230,6 +258,102 @@ export default function Home() {
       return { ...prev, hobbiesList: newList };
     });
   };
+
+  /**
+   * Projects list management helpers
+   * Each project entry includes a title and description. This allows
+   * candidates to highlight personal or professional projects such as
+   * open‑source contributions, hackathon apps, or side businesses.
+   */
+  const addProject = () => {
+    setForm((prev) => ({
+      ...prev,
+      projectsList: [...prev.projectsList, { title: "", description: "" }],
+    }));
+  };
+  const updateProject = (
+    index: number,
+    key: "title" | "description",
+    value: string
+  ) => {
+    setForm((prev) => {
+      const newList = prev.projectsList.map((proj, idx) =>
+        idx === index ? { ...proj, [key]: value } : proj
+      );
+      return { ...prev, projectsList: newList };
+    });
+  };
+  const removeProject = (index: number) => {
+    setForm((prev) => {
+      const newList = prev.projectsList.filter((_, idx) => idx !== index);
+      return { ...prev, projectsList: newList };
+    });
+  };
+
+  /**
+   * Certifications list management helpers
+   * Each certification includes a name, issuer and year. Users can
+   * document professional certifications, courses or credentials.
+   */
+  const addCertification = () => {
+    setForm((prev) => ({
+      ...prev,
+      certificationsList: [
+        ...prev.certificationsList,
+        { name: "", issuer: "", year: "" },
+      ],
+    }));
+  };
+  const updateCertification = (
+    index: number,
+    key: "name" | "issuer" | "year",
+    value: string
+  ) => {
+    setForm((prev) => {
+      const newList = prev.certificationsList.map((cert, idx) =>
+        idx === index ? { ...cert, [key]: value } : cert
+      );
+      return { ...prev, certificationsList: newList };
+    });
+  };
+  const removeCertification = (index: number) => {
+    setForm((prev) => {
+      const newList = prev.certificationsList.filter((_, idx) => idx !== index);
+      return { ...prev, certificationsList: newList };
+    });
+  };
+
+  // Maintain the order in which CV sections appear in the preview. Users can
+  // reorder this list via simple up/down controls. The default order is
+  // education, experience, skills, languages and hobbies. Placing this
+  // declaration here ensures it is available when defining the preview
+  // component below.
+  const [sectionOrder, setSectionOrder] = useState<string[]>([
+    'education',
+    'experience',
+    'projects',
+    'certifications',
+    'skills',
+    'languages',
+    'hobbies',
+  ]);
+
+  /**
+   * Move a section up or down in the sectionOrder list. The index refers to
+   * the current position of the section in the array and direction should
+   * be -1 for up or +1 for down. If the new position would be out of
+   * bounds, the function does nothing.
+   */
+  const moveSection = (index: number, direction: -1 | 1) => {
+    setSectionOrder((prev) => {
+      const newOrder = [...prev];
+      const newIndex = index + direction;
+      if (newIndex < 0 || newIndex >= newOrder.length) return prev;
+      const [item] = newOrder.splice(index, 1);
+      newOrder.splice(newIndex, 0, item);
+      return newOrder;
+    });
+  };
   // Advance to the next step if possible.
   const nextStep = () => setStep((s) => Math.min(s + 1, 5));
   // Go back to the previous step.
@@ -237,10 +361,19 @@ export default function Home() {
 
   // Generate a formatted preview of the CV based on the selected template.
   const preview = useMemo(() => {
+    // Map the selected font family to actual CSS font family names. These
+    // values are defined here rather than in CSS so that we can easily
+    // switch fonts at runtime. If a key is missing, fallback to Arial.
+    const fontMap: { [key: string]: string } = {
+      sans: 'Arial, sans-serif',
+      serif: '"Times New Roman", Georgia, serif',
+      mono: '"Courier New", monospace',
+    };
     return (
       <div
         id="cvPreview"
         className={`${styles.preview} ${styles[form.template] || ""}`}
+        style={{ fontFamily: fontMap[form.fontFamily] || fontMap.sans }}
       >
         {/* Header */}
         {(form.firstName || form.lastName) && (
@@ -260,71 +393,130 @@ export default function Home() {
             )}
           </p>
         )}
-        {/* Summary */}
+        {/* Optional contact links */}
+        {(form.linkedin || form.website) && (
+          <p className={styles.cvContact}>
+            {form.linkedin && (
+              <span>
+                LinkedIn: {form.linkedin}
+                {form.website && ' | '}
+              </span>
+            )}
+            {form.website && <span>Website: {form.website}</span>}
+          </p>
+        )}
+        {/* Summary and dynamic sections */}
+        {/* Always render summary first if provided */}
         {form.summary && (
           <section className={styles.cvSection}>
             <h3>Summary</h3>
             <p>{form.summary}</p>
           </section>
         )}
-        {/* Education */}
-        {form.educationList.length > 0 && (
-          <section className={styles.cvSection}>
-            <h3>Education</h3>
-            {form.educationList.map((edu, idx) => (
-              <p key={idx}>
-                <strong>{edu.degree}</strong>, {edu.institution}
-                {edu.year && ` (${edu.year})`}
-              </p>
-            ))}
-          </section>
-        )}
-        {/* Experience */}
-        {form.experienceList.length > 0 && (
-          <section className={styles.cvSection}>
-            <h3>Experience</h3>
-            {form.experienceList.map((exp, idx) => (
-              <p key={idx}>
-                <strong>{exp.role}</strong>, {exp.company}
-                {exp.period && ` (${exp.period})`}
-                {exp.description && `\n${exp.description}`}
-              </p>
-            ))}
-          </section>
-        )}
-        {/* Skills */}
-        {form.skillsList.length > 0 && (
-          <section className={styles.cvSection}>
-            <h3>Skills</h3>
-            <p>{form.skillsList.join(", ")}</p>
-          </section>
-        )}
-        {/* Languages */}
-        {form.languagesList.length > 0 && (
-          <section className={styles.cvSection}>
-            <h3>Languages</h3>
-            <p>
-              {form.languagesList
-                .map((lang) =>
-                  lang.language
-                    ? `${lang.language}${lang.level ? ` (${lang.level})` : ""}`
-                    : ""
+        {/* Render sections in user‑chosen order */}
+        {sectionOrder.map((sectionName) => {
+          switch (sectionName) {
+            case 'education':
+              return (
+                form.educationList.length > 0 && (
+                  <section key="education" className={styles.cvSection}>
+                    <h3>Education</h3>
+                    {form.educationList.map((edu, idx) => (
+                      <p key={idx}>
+                        <strong>{edu.degree}</strong>, {edu.institution}
+                        {edu.year && ` (${edu.year})`}
+                      </p>
+                    ))}
+                  </section>
                 )
-                .filter(Boolean)
-                .join(", ")}
-            </p>
-          </section>
-        )}
-        {/* Hobbies */}
-        {form.hobbiesList.length > 0 && (
-          <section className={styles.cvSection}>
-            <h3>Hobbies</h3>
-            <p>{form.hobbiesList.join(", ")}</p>
-          </section>
-        )}
+              );
+            case 'experience':
+              return (
+                form.experienceList.length > 0 && (
+                  <section key="experience" className={styles.cvSection}>
+                    <h3>Experience</h3>
+                    {form.experienceList.map((exp, idx) => (
+                      <p key={idx}>
+                        <strong>{exp.role}</strong>, {exp.company}
+                        {exp.period && ` (${exp.period})`}
+                        {exp.description && `\n${exp.description}`}
+                      </p>
+                    ))}
+                  </section>
+                )
+              );
+            case 'skills':
+              return (
+                form.skillsList.length > 0 && (
+                  <section key="skills" className={styles.cvSection}>
+                    <h3>Skills</h3>
+                    <p>{form.skillsList.join(', ')}</p>
+                  </section>
+                )
+              );
+            case 'languages':
+              return (
+                form.languagesList.length > 0 && (
+                  <section key="languages" className={styles.cvSection}>
+                    <h3>Languages</h3>
+                    <p>
+                      {form.languagesList
+                        .map((lang) =>
+                          lang.language
+                            ? `${lang.language}${lang.level ? ` (${lang.level})` : ''}`
+                            : ''
+                        )
+                        .filter(Boolean)
+                        .join(', ')}
+                    </p>
+                  </section>
+                )
+              );
+            case 'hobbies':
+              return (
+                form.hobbiesList.length > 0 && (
+                  <section key="hobbies" className={styles.cvSection}>
+                    <h3>Hobbies</h3>
+                    <p>{form.hobbiesList.join(', ')}</p>
+                  </section>
+                )
+              );
+            case 'projects':
+              return (
+                form.projectsList.length > 0 && (
+                  <section key="projects" className={styles.cvSection}>
+                    <h3>Projects</h3>
+                    {form.projectsList.map((proj, idx) => (
+                      <p key={idx}>
+                        <strong>{proj.title}</strong>
+                        {proj.description && ` – ${proj.description}`}
+                      </p>
+                    ))}
+                  </section>
+                )
+              );
+            case 'certifications':
+              return (
+                form.certificationsList.length > 0 && (
+                  <section key="certifications" className={styles.cvSection}>
+                    <h3>Certifications</h3>
+                    {form.certificationsList.map((cert, idx) => (
+                      <p key={idx}>
+                        <strong>{cert.name}</strong>
+                        {cert.issuer && `, ${cert.issuer}`}
+                        {cert.year && ` (${cert.year})`}
+                      </p>
+                    ))}
+                  </section>
+                )
+              );
+            default:
+              return null;
+          }
+        })}
       </div>
     );
-  }, [form]);
+  }, [form, sectionOrder]);
 
   // Export the current CV preview to PDF using html2canvas and jspdf.
   const exportPDF = async () => {
@@ -411,9 +603,65 @@ export default function Home() {
     "Art",
     "Dance",
   ];
+
+  // Available resume templates and their human‑friendly labels. These names
+  // correspond to CSS modifier classes defined in page.module.css.
+  const templateOptions: string[] = ["professional", "classic", "creative"];
+  const templateLabels: { [key: string]: string } = {
+    professional: "Professional",
+    classic: "Classic",
+    creative: "Creative",
+  };
+
+  // Predefined bullet suggestions for experience descriptions. These generic
+  // achievements follow resume writing advice: start with strong action
+  // verbs, highlight impact and quantify results where possible【472900044272202†L105-L139】.
+  const experienceSuggestions: string[] = [
+    "Led a cross‑functional team to deliver a major project two weeks ahead of schedule, improving customer satisfaction by 20%.",
+    "Implemented automated testing that reduced bugs in production by 30% and improved code quality.",
+    "Optimized legacy processes, resulting in a 25% reduction in costs and 15% increase in productivity.",
+    "Collaborated with product and design teams to launch a new feature that generated $500K in new revenue.",
+    "Mentored junior colleagues, improving team knowledge sharing and increasing overall velocity by 10%.",
+  ];
   const [showSkillSuggestions, setShowSkillSuggestions] = useState(false);
   const [showLanguageSuggestions, setShowLanguageSuggestions] = useState(false);
   const [showHobbySuggestions, setShowHobbySuggestions] = useState(false);
+
+
+
+  // Persist the form and section order to localStorage so users can return
+  // later and continue editing. On mount, attempt to load any saved data.
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("cvBuilderData");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.form) setForm(parsed.form);
+        if (parsed.sectionOrder) setSectionOrder(parsed.sectionOrder);
+      }
+    } catch {
+      // Ignore any JSON parsing errors
+    }
+  }, []);
+  useEffect(() => {
+    // Debounce by 300ms to avoid excessive writes; wrap in setTimeout
+    const timer = setTimeout(() => {
+      try {
+        localStorage.setItem(
+          "cvBuilderData",
+          JSON.stringify({ form, sectionOrder })
+        );
+      } catch {
+        // localStorage might be unavailable in some contexts; ignore errors
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [form, sectionOrder]);
+
+  // Per‑experience toggles for showing description suggestions. When an entry
+  // is added or removed, the corresponding boolean is added or removed from
+  // this array so that each experience has its own show/hide state.
+  const [expSugToggles, setExpSugToggles] = useState<boolean[]>([]);
 
   // Temporary input states for adding skills and hobbies. These store the
   // value typed into the input before it is added to the corresponding list.
@@ -453,7 +701,14 @@ export default function Home() {
   }, [step, form, errors]);
 
   return (
-    <div className={styles.page}>
+    <div
+      className={styles.page}
+      style={{
+        // CSS variables must be typed using a string index; disable explicit any
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ['--primary-color' as any]: form.accentColor,
+      }}
+    >
       <main className={styles.main}>
         <h1>CV Builder</h1>
         <p>Create your resume step by step. Fill each section and progress to the next.</p>
@@ -547,6 +802,34 @@ export default function Home() {
                   />
                 </div>
                 {errors.phone && <span className={styles.error}>{errors.phone}</span>}
+              </label>
+              <label>
+                LinkedIn (optional)
+                <input
+                  type="url"
+                  name="linkedin"
+                  value={form.linkedin}
+                  onChange={handleChange}
+                  placeholder="https://linkedin.com/in/username"
+                  className={errors.linkedin ? styles.invalid : ''}
+                />
+                {errors.linkedin && (
+                  <span className={styles.error}>{errors.linkedin}</span>
+                )}
+              </label>
+              <label>
+                Website (optional)
+                <input
+                  type="url"
+                  name="website"
+                  value={form.website}
+                  onChange={handleChange}
+                  placeholder="https://example.com"
+                  className={errors.website ? styles.invalid : ''}
+                />
+                {errors.website && (
+                  <span className={styles.error}>{errors.website}</span>
+                )}
               </label>
             </>
           )}
@@ -656,6 +939,53 @@ export default function Home() {
                     onChange={(e) => updateExperience(idx, "description", e.target.value)}
                     rows={3}
                   />
+                  {/* Toggle suggestions for this experience's description */}
+                  <button
+                    type="button"
+                    className={styles.suggestionBtn}
+                    onClick={() =>
+                      setExpSugToggles((prev) => {
+                        const newArr = [...prev];
+                        newArr[idx] = !newArr[idx];
+                        return newArr;
+                      })
+                    }
+                  >
+                    {expSugToggles[idx] ? 'Hide' : 'Show'} Description Suggestions
+                  </button>
+                  {expSugToggles[idx] && (
+                    <ul className={styles.suggestionsList}>
+                      {experienceSuggestions.map((sugg, sIdx) => (
+                        <li
+                          key={sIdx}
+                          onClick={() => {
+                            // Append or replace the description with the suggestion
+                            setForm((prev) => {
+                              const newList = prev.experienceList.map((item, i) =>
+                                i === idx
+                                  ? {
+                                      ...item,
+                                      description: item.description
+                                        ? `${item.description}\n${sugg}`
+                                        : sugg,
+                                    }
+                                  : item
+                              );
+                              return { ...prev, experienceList: newList };
+                            });
+                            // Collapse the suggestions after selecting
+                            setExpSugToggles((prev) => {
+                              const copy = [...prev];
+                              copy[idx] = false;
+                              return copy;
+                            });
+                          }}
+                        >
+                          {sugg}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                   <button
                     type="button"
                     onClick={() => removeExperience(idx)}
@@ -855,19 +1185,175 @@ export default function Home() {
                   </ul>
                 )}
               </div>
-              <label>
-                Template Style
+              {/* Projects section: allow users to document key projects or personal work */}
+              <div className={styles.projSection}>
+                <span style={{ fontWeight: 500, fontSize: 14 }}>Projects (optional)</span>
+                {form.projectsList.map((proj, idx) => (
+                  <div key={idx} className={styles.projRow}>
+                    <input
+                      type="text"
+                      placeholder="Project Title"
+                      value={proj.title}
+                      onChange={(e) => updateProject(idx, 'title', e.target.value)}
+                    />
+                    <textarea
+                      placeholder="Description"
+                      value={proj.description}
+                      onChange={(e) => updateProject(idx, 'description', e.target.value)}
+                      rows={2}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeProject(idx)}
+                      className={styles.removeBtn}
+                    >
+                      &times;
+                    </button>
+                  </div>
+                ))}
+                <button type="button" className={styles.addBtn} onClick={addProject}>
+                  + Add Project
+                </button>
+              </div>
+
+              {/* Certifications section: capture certificates, courses or credentials */}
+              <div className={styles.certSection}>
+                <span style={{ fontWeight: 500, fontSize: 14 }}>Certifications (optional)</span>
+                {form.certificationsList.map((cert, idx) => (
+                  <div key={idx} className={styles.certRow}>
+                    <input
+                      type="text"
+                      placeholder="Certificate Name"
+                      value={cert.name}
+                      onChange={(e) => updateCertification(idx, 'name', e.target.value)}
+                    />
+                    <input
+                      type="text"
+                      placeholder="Issuer"
+                      value={cert.issuer}
+                      onChange={(e) => updateCertification(idx, 'issuer', e.target.value)}
+                    />
+                    <input
+                      type="text"
+                      placeholder="Year"
+                      value={cert.year}
+                      onChange={(e) => updateCertification(idx, 'year', e.target.value)}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeCertification(idx)}
+                      className={styles.removeBtn}
+                    >
+                      &times;
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  className={styles.addBtn}
+                  onClick={addCertification}
+                >
+                  + Add Certification
+                </button>
+              </div>
+              {/* Template selection with visual previews. Users can click a card
+                  to choose their preferred style. The select remains as a
+                  fallback for accessibility or if JavaScript is disabled. */}
+              <div className={styles.templateSelector}>
+                {templateOptions.map((tpl) => (
+                  <div
+                    key={tpl}
+                    className={`${styles.templateCard} ${form.template === tpl ? styles.templateCardSelected : ''}`}
+                    onClick={() => setForm((prev) => ({ ...prev, template: tpl }))}
+                  >
+                    <div className={`${styles.templatePreview} ${styles[tpl]}`}>
+                      <div style={{ fontWeight: 700, fontSize: 12 }}>John Doe</div>
+                      <div style={{ fontStyle: 'italic', fontSize: 10 }}>Software Engineer</div>
+                      <div style={{ fontSize: 8 }}>john@doe.com | +31 123456789</div>
+                    </div>
+                    <span className={styles.templateLabel}>{templateLabels[tpl]}</span>
+                  </div>
+                ))}
+              </div>
+              <label className={styles.templateSelectLabel}>
+                <span style={{ display: 'none' }}>Template Style</span>
                 <select
                   name="template"
                   value={form.template}
                   onChange={handleChange}
+                  className={styles.templateSelect}
                 >
-                  {/* Provide three distinct templates for different tastes. */}
-                  <option value="professional">Professional</option>
-                  <option value="classic">Classic</option>
-                  <option value="creative">Creative</option>
+                  {templateOptions.map((tpl) => (
+                    <option key={tpl} value={tpl}>{templateLabels[tpl]}</option>
+                  ))}
                 </select>
               </label>
+              {/* Colour picker to customise the primary accent colour. On
+                  mobile devices this uses the native colour picker. */}
+              <label>
+                Accent Colour
+                <input
+                  type="color"
+                  value={form.accentColor}
+                  onChange={(e) =>
+                    setForm((prev) => ({ ...prev, accentColor: e.target.value }))
+                  }
+                />
+              </label>
+
+              <label>
+                Font Style
+                <select
+                  name="fontFamily"
+                  value={form.fontFamily}
+                  onChange={handleChange}
+                >
+                  <option value="sans">Sans (default)</option>
+                  <option value="serif">Serif</option>
+                  <option value="mono">Monospace</option>
+                </select>
+              </label>
+
+              {/* Section order reordering. Users can change the order in which
+                  resume sections appear in the preview. This is presented as
+                  a simple list with up/down buttons. */}
+              <div className={styles.reorderContainer}>
+                <span style={{ fontWeight: 500, fontSize: 14 }}>Section Order</span>
+                <ul className={styles.reorderList}>
+                  {sectionOrder.map((sec, idx) => {
+                    const labelMap: { [key: string]: string } = {
+                      education: 'Education',
+                      experience: 'Experience',
+                      projects: 'Projects',
+                      certifications: 'Certifications',
+                      skills: 'Skills',
+                      languages: 'Languages',
+                      hobbies: 'Hobbies',
+                    };
+                    return (
+                      <li key={sec} className={styles.reorderItem}>
+                        <span>{labelMap[sec] || sec}</span>
+                        <div className={styles.reorderButtons}>
+                          <button
+                            type="button"
+                            onClick={() => moveSection(idx, -1)}
+                            disabled={idx === 0}
+                          >
+                            ↑
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => moveSection(idx, 1)}
+                            disabled={idx === sectionOrder.length - 1}
+                          >
+                            ↓
+                          </button>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
             </>
           )}
           {step === 5 && (

@@ -814,3 +814,33 @@
   padding: 4px 8px;
   font-size: 14px;
 }
+
+/* ----------------------------------------------------------------------- */
+/* Projects and certifications sections                                    */
+/* ----------------------------------------------------------------------- */
+
+/* Container for projects and certifications */
+.projSection,
+.certSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+/* Rows for projects (title + description) and certifications (name, issuer, year) */
+.projRow,
+.certRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.projRow input,
+.projRow textarea,
+.certRow input {
+  flex: 1;
+  min-width: 0;
+}
