@@ -54,6 +54,9 @@ export default function Home() {
      * this list in the future or even let users upload their own fonts.
      */
     fontFamily: "sans", // one of: 'sans', 'serif', 'mono'
+    /** Optional profile image stored as a data URL. Allows users to upload
+     * a headshot that appears at the top of the resume. */
+    profileImage: null as string | null,
   });
   // Current step in the wizard (0‑5). 0: personal, 1: summary,
   // 2: education, 3: experience, 4: skills & extras, 5: preview.
@@ -313,6 +316,23 @@ export default function Home() {
   };
 
   /**
+   * Handle profile image uploads. Convert the selected file into a base64
+   * data URL and store it in the form state. Only the first file is used.
+   */
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const result = evt.target?.result;
+      if (typeof result === 'string') {
+        setForm((prev) => ({ ...prev, profileImage: result }));
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  /**
    * Projects list management helpers
    * Each project entry includes a title and description. This allows
    * candidates to highlight personal or professional projects such as
@@ -429,6 +449,14 @@ export default function Home() {
         style={{ fontFamily: fontMap[form.fontFamily] || fontMap.sans }}
       >
         {/* Header */}
+        {/* Show a profile image if provided */}
+        {form.profileImage && (
+          <img
+            src={form.profileImage}
+            alt="Profile"
+            className={styles.cvAvatar}
+          />
+        )}
         {(form.firstName || form.lastName) && (
           <h1 className={styles.cvName}>
             {[form.firstName, form.lastName].filter(Boolean).join(" ")}
@@ -883,6 +911,16 @@ export default function Home() {
                 {errors.website && (
                   <span className={styles.error}>{errors.website}</span>
                 )}
+              </label>
+
+              {/* Profile photo upload */}
+              <label>
+                Profile Photo (optional)
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                />
               </label>
             </>
           )}

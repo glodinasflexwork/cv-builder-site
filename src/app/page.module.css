@@ -400,6 +400,15 @@
   white-space: pre-line;
 }
 
+/* Profile photo in the CV preview */
+.cvAvatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: 8px;
+}
+
 /* Template modifiers */
 
 /*
