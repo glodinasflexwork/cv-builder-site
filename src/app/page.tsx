@@ -166,15 +166,36 @@ export default function Home() {
     if (!input) return;
     const canvas = await html2canvas(input, { scale: 2 });
     const imgData = canvas.toDataURL("image/png");
-    const pdf = new jsPDF({ unit: "px", format: "a4" });
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-    pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+    // Create an A4 portrait PDF with pixel units for precise sizing.
+    const pdf = new jsPDF({ orientation: "portrait", unit: "px", format: "a4" });
+    const margin = 40; // uniform margins around the page
+    let pdfWidth = pdf.internal.pageSize.getWidth() - margin * 2;
+    let pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+    const pageHeight = pdf.internal.pageSize.getHeight() - margin * 2;
+    // If the generated image is taller than the page, scale it down to fit
+    if (pdfHeight > pageHeight) {
+      const scale = pageHeight / pdfHeight;
+      pdfWidth *= scale;
+      pdfHeight = pageHeight;
+    }
+    pdf.addImage(imgData, "PNG", margin, margin, pdfWidth, pdfHeight);
     pdf.save("resume.pdf");
   };
 
   // Year for footer copyright.
   const currentYear = new Date().getFullYear();
+
+  // Predefined suggestions for the professional summary. These sample
+  // descriptions follow guidance from resume writing resources: use strong
+  // action verbs and highlight achievements and experience. Users can
+  // select one of these templates to quickly populate their summary.
+  const summarySuggestions: string[] = [
+    "Results‑oriented professional with over 5 years of experience driving cross‑functional teams to deliver high‑impact projects on time and within budget.",
+    "Detail‑oriented specialist skilled in data analysis and process optimization; adept at using insights to streamline operations and improve efficiency.",
+    "Creative problem solver with a proven track record of developing innovative solutions that increase revenue and enhance customer satisfaction."
+  ];
+  // Show/hide flag for summary suggestion list.
+  const [showSummarySuggestions, setShowSummarySuggestions] = useState(false);
 
   // Determine whether the "Next" button should be disabled on each step.
   const isNextDisabled = useMemo(() => {
@@ -316,6 +337,31 @@ export default function Home() {
                   placeholder="Briefly describe your experience and career goals"
                 />
               </label>
+              {/* Toggle to display helpful summary suggestions. Providing pre‑written
+                  content helps users get started, as recommended by resume
+                  builder best practices【864196423349143†L96-L117】. */}
+              <button
+                type="button"
+                className={styles.suggestionBtn}
+                onClick={() => setShowSummarySuggestions((show) => !show)}
+              >
+                {showSummarySuggestions ? "Hide" : "Show"} Suggestions
+              </button>
+              {showSummarySuggestions && (
+                <ul className={styles.suggestionsList}>
+                  {summarySuggestions.map((text, idx) => (
+                    <li
+                      key={idx}
+                      onClick={() => {
+                        setForm((prev) => ({ ...prev, summary: text }));
+                        setShowSummarySuggestions(false);
+                      }}
+                    >
+                      {text}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </>
           )}
           {step === 2 && (
@@ -388,9 +434,10 @@ export default function Home() {
                   value={form.template}
                   onChange={handleChange}
                 >
+                  {/* Provide three distinct templates for different tastes. */}
                   <option value="professional">Professional</option>
-                  <option value="minimal">Minimal</option>
-                  <option value="modern">Modern</option>
+                  <option value="classic">Classic</option>
+                  <option value="creative">Creative</option>
                 </select>
               </label>
             </>

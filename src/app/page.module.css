@@ -140,11 +140,11 @@
 .progressBar::before {
   content: "";
   position: absolute;
-  top: 18px;
+  top: 20px;
   left: 0;
   right: 0;
   height: 2px;
-  background: rgba(0, 112, 243, 0.2);
+  background: rgba(0, 112, 243, 0.15);
   z-index: 0;
 }
 
@@ -161,14 +161,15 @@
 }
 
 /* Circle containing the step number */
+/* Step number circle */
 .stepCircle {
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
   background: var(--gray-alpha-100);
   color: var(--foreground);
   border: 2px solid var(--gray-alpha-200);
@@ -177,10 +178,12 @@
 }
 
 /* Label beneath each circle */
+/* Step label under the circle */
 .stepLabel {
   font-size: 11px;
   text-transform: uppercase;
   color: var(--foreground);
+  line-height: 1.2;
 }
 
 /* State classes for progress steps */
@@ -316,6 +319,39 @@
   transform: translateY(-1px);
 }
 
+/* Suggestion button used to toggle the display of example summaries */
+.suggestionBtn {
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  font-size: 14px;
+  padding: 0;
+  margin-top: 8px;
+  cursor: pointer;
+  text-decoration: underline;
+  align-self: flex-start;
+}
+
+/* List of summary suggestions */
+.suggestionsList {
+  margin-top: 8px;
+  padding-left: 16px;
+  list-style: disc;
+  font-size: 14px;
+  line-height: 1.4;
+  color: inherit;
+}
+
+.suggestionsList li {
+  cursor: pointer;
+  margin-bottom: 6px;
+}
+
+.suggestionsList li:hover {
+  color: var(--primary-color);
+  text-decoration: underline;
+}
+
 /* CV preview styles */
 .cvName {
   margin: 0;
@@ -355,6 +391,19 @@
 }
 
 /* Template modifiers */
+
+/*
+ * Template modifiers
+ *
+ * Each resume style defines its own colour palette, typography and layout
+ * variations. Users can choose between Professional (default), Classic and
+ * Creative templates. Classic uses a more traditional serif font and a
+ * neutral palette, while Creative introduces a coloured accent bar for a more
+ * modern look. These templates provide variety for different industries and
+ * personal tastes.
+ */
+
+/* Professional template – clean sans‑serif typeface and neutral palette */
 .professional {
   background: #fff;
   border: 1px solid var(--gray-alpha-200);
@@ -364,21 +413,23 @@
   font-family: Arial, sans-serif;
 }
 
-.minimal {
+/* Classic template – subtle off‑white background and serif typography */
+.classic {
   background: #f8f8f8;
-  border: 1px solid #e5e5e5;
-  padding: 16px;
+  border: 1px solid #dcdcdc;
+  padding: 20px;
   border-radius: 8px;
   color: #333;
-  font-family: "Helvetica Neue", sans-serif;
+  font-family: "Times New Roman", Georgia, serif;
 }
 
-.modern {
-  background: #ffffff;
-  border-left: 4px solid #0070f3;
+/* Creative template – coloured left bar and softer pastel background */
+.creative {
+  background: #fafcff;
+  border-left: 5px solid #ff6f61; /* coral accent */
   padding: 16px;
   border-radius: 4px;
-  color: #111;
+  color: #222;
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 
