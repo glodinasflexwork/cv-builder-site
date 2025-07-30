@@ -23,11 +23,20 @@ export default function Home() {
     countryCode: "+31", // default to Netherlands
     phone: "",
     summary: "",
-    education: "",
-    experience: "",
-    skills: "",
-    languages: "",
-    hobbies: "",
+    /**
+     * Dynamic lists for structured resume sections. Instead of storing
+     * large text blobs, the app now captures structured data for education
+     * and work history. Each education entry includes a degree, institution
+     * and year range. Each experience entry includes a role, company,
+     * period and description. Skills, languages and hobbies are stored as
+     * arrays of simple values or objects. This design simplifies editing
+     * and produces cleaner output in the preview and PDF.
+     */
+    educationList: [] as { institution: string; degree: string; year: string }[],
+    experienceList: [] as { role: string; company: string; period: string; description: string }[],
+    skillsList: [] as string[],
+    languagesList: [] as { language: string; level: string }[],
+    hobbiesList: [] as string[],
     template: "professional", // default template
   });
   // Current step in the wizard (0‑5). 0: personal, 1: summary,
@@ -82,6 +91,145 @@ export default function Home() {
     const errorMsg = validateField(name, value);
     setErrors((prev) => ({ ...prev, [name]: errorMsg }));
   };
+
+  /**
+   * Language list management helpers
+   * Each language entry has a `language` and `level` property. Use these
+   * helpers to add, update and remove languages. When adding from suggestions
+   * the default level is set to "Fluent".
+   */
+  const addLanguage = () => {
+    setForm((prev) => ({
+      ...prev,
+      languagesList: [...prev.languagesList, { language: "", level: "" }],
+    }));
+  };
+  const updateLanguage = (
+    index: number,
+    key: "language" | "level",
+    value: string
+  ) => {
+    setForm((prev) => {
+      const newList = prev.languagesList.map((item, idx) =>
+        idx === index ? { ...item, [key]: value } : item
+      );
+      return { ...prev, languagesList: newList };
+    });
+  };
+  const removeLanguage = (index: number) => {
+    setForm((prev) => {
+      const newList = prev.languagesList.filter((_, idx) => idx !== index);
+      return { ...prev, languagesList: newList };
+    });
+  };
+
+  /**
+   * Education list management helpers
+   * Each education entry captures a degree (e.g. BSc Computer Science), the
+   * institution and the year or year range (e.g. 2018–2022). Adding and
+   * removing entries allows users to list multiple degrees or programs.
+   */
+  const addEducation = () => {
+    setForm((prev) => ({
+      ...prev,
+      educationList: [
+        ...prev.educationList,
+        { institution: "", degree: "", year: "" },
+      ],
+    }));
+  };
+  const updateEducation = (
+    index: number,
+    key: "institution" | "degree" | "year",
+    value: string
+  ) => {
+    setForm((prev) => {
+      const newList = prev.educationList.map((item, idx) =>
+        idx === index ? { ...item, [key]: value } : item
+      );
+      return { ...prev, educationList: newList };
+    });
+  };
+  const removeEducation = (index: number) => {
+    setForm((prev) => {
+      const newList = prev.educationList.filter((_, idx) => idx !== index);
+      return { ...prev, educationList: newList };
+    });
+  };
+
+  /**
+   * Experience list management helpers
+   * Each experience entry captures a job role, company, period (e.g. 2021–2023)
+   * and a brief description of responsibilities or achievements. Users can
+   * add multiple positions and remove them as needed.
+   */
+  const addExperience = () => {
+    setForm((prev) => ({
+      ...prev,
+      experienceList: [
+        ...prev.experienceList,
+        { role: "", company: "", period: "", description: "" },
+      ],
+    }));
+  };
+  const updateExperience = (
+    index: number,
+    key: "role" | "company" | "period" | "description",
+    value: string
+  ) => {
+    setForm((prev) => {
+      const newList = prev.experienceList.map((item, idx) =>
+        idx === index ? { ...item, [key]: value } : item
+      );
+      return { ...prev, experienceList: newList };
+    });
+  };
+  const removeExperience = (index: number) => {
+    setForm((prev) => {
+      const newList = prev.experienceList.filter((_, idx) => idx !== index);
+      return { ...prev, experienceList: newList };
+    });
+  };
+
+  /**
+   * Skills list management helpers
+   * Store skills as a simple string array. Users can add skills via an
+   * input field or by selecting from the suggestion list. Removing a
+   * skill removes it from the array.
+   */
+  const addSkill = (skill: string) => {
+    setForm((prev) => {
+      // Avoid duplicates (case-insensitive)
+      const exists = prev.skillsList.some((s) => s.toLowerCase() === skill.toLowerCase());
+      if (exists || !skill.trim()) return prev;
+      return { ...prev, skillsList: [...prev.skillsList, skill.trim()] };
+    });
+  };
+  const removeSkill = (index: number) => {
+    setForm((prev) => {
+      const newList = prev.skillsList.filter((_, idx) => idx !== index);
+      return { ...prev, skillsList: newList };
+    });
+  };
+
+  /**
+   * Hobby list management helpers
+   * Similar to skills, hobbies are stored as a simple string array. Users
+   * can add hobbies via an input or pick from suggestions.
+   */
+  const addHobby = (hobby: string) => {
+    setForm((prev) => {
+      const exists = prev.hobbiesList.some((h) => h.toLowerCase() === hobby.toLowerCase());
+      if (exists || !hobby.trim()) return prev;
+      return { ...prev, hobbiesList: [...prev.hobbiesList, hobby.trim()] };
+    });
+  };
+  const removeHobby = (index: number) => {
+    setForm((prev) => {
+      const newList = prev.hobbiesList.filter((_, idx) => idx !== index);
+      return { ...prev, hobbiesList: newList };
+    });
+  };
   // Advance to the next step if possible.
   const nextStep = () => setStep((s) => Math.min(s + 1, 5));
   // Go back to the previous step.
@@ -120,38 +268,58 @@ export default function Home() {
           </section>
         )}
         {/* Education */}
-        {form.education && (
+        {form.educationList.length > 0 && (
           <section className={styles.cvSection}>
             <h3>Education</h3>
-            <p>{form.education}</p>
+            {form.educationList.map((edu, idx) => (
+              <p key={idx}>
+                <strong>{edu.degree}</strong>, {edu.institution}
+                {edu.year && ` (${edu.year})`}
+              </p>
+            ))}
           </section>
         )}
         {/* Experience */}
-        {form.experience && (
+        {form.experienceList.length > 0 && (
           <section className={styles.cvSection}>
             <h3>Experience</h3>
-            <p>{form.experience}</p>
+            {form.experienceList.map((exp, idx) => (
+              <p key={idx}>
+                <strong>{exp.role}</strong>, {exp.company}
+                {exp.period && ` (${exp.period})`}
+                {exp.description && `\n${exp.description}`}
+              </p>
+            ))}
           </section>
         )}
         {/* Skills */}
-        {form.skills && (
+        {form.skillsList.length > 0 && (
           <section className={styles.cvSection}>
             <h3>Skills</h3>
-            <p>{form.skills}</p>
+            <p>{form.skillsList.join(", ")}</p>
           </section>
         )}
         {/* Languages */}
-        {form.languages && (
+        {form.languagesList.length > 0 && (
           <section className={styles.cvSection}>
             <h3>Languages</h3>
-            <p>{form.languages}</p>
+            <p>
+              {form.languagesList
+                .map((lang) =>
+                  lang.language
+                    ? `${lang.language}${lang.level ? ` (${lang.level})` : ""}`
+                    : ""
+                )
+                .filter(Boolean)
+                .join(", ")}
+            </p>
           </section>
         )}
         {/* Hobbies */}
-        {form.hobbies && (
+        {form.hobbiesList.length > 0 && (
           <section className={styles.cvSection}>
             <h3>Hobbies</h3>
-            <p>{form.hobbies}</p>
+            <p>{form.hobbiesList.join(", ")}</p>
           </section>
         )}
       </div>
@@ -247,6 +415,11 @@ export default function Home() {
   const [showLanguageSuggestions, setShowLanguageSuggestions] = useState(false);
   const [showHobbySuggestions, setShowHobbySuggestions] = useState(false);
 
+  // Temporary input states for adding skills and hobbies. These store the
+  // value typed into the input before it is added to the corresponding list.
+  const [newSkill, setNewSkill] = useState("");
+  const [newHobby, setNewHobby] = useState("");
+
   // Determine whether the "Next" button should be disabled on each step.
   const isNextDisabled = useMemo(() => {
     // Prevent progressing if there are validation errors on required fields.
@@ -266,11 +439,14 @@ export default function Home() {
       case 1:
         return !form.summary;
       case 2:
-        return !form.education;
+        // Require at least one education entry before proceeding
+        return form.educationList.length === 0;
       case 3:
-        return !form.experience;
+        // Require at least one experience entry
+        return form.experienceList.length === 0;
       case 4:
-        return !form.skills;
+        // Require at least one skill entry
+        return form.skillsList.length === 0;
       default:
         return false;
     }
@@ -417,52 +593,124 @@ export default function Home() {
           {step === 2 && (
             <>
               <h2>Education</h2>
-              <label>
-                Education
-                <textarea
-                  name="education"
-                  value={form.education}
-                  onChange={handleChange}
-                  rows={4}
-                  placeholder="List degrees, institutions and dates"
-                />
-              </label>
+              {form.educationList.map((edu, idx) => (
+                <div key={idx} className={styles.eduRow}>
+                  <input
+                    type="text"
+                    placeholder="Degree (e.g. BSc Computer Science)"
+                    value={edu.degree}
+                    onChange={(e) => updateEducation(idx, "degree", e.target.value)}
+                  />
+                    <input
+                      type="text"
+                      placeholder="Institution (e.g. University of Amsterdam)"
+                      value={edu.institution}
+                      onChange={(e) => updateEducation(idx, "institution", e.target.value)}
+                    />
+                    <input
+                      type="text"
+                      placeholder="Year or range (e.g. 2018–2022)"
+                      value={edu.year}
+                      onChange={(e) => updateEducation(idx, "year", e.target.value)}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeEducation(idx)}
+                      className={styles.removeBtn}
+                    >
+                      &times;
+                    </button>
+                </div>
+              ))}
+              <button type="button" className={styles.addBtn} onClick={addEducation}>
+                + Add Education
+              </button>
             </>
           )}
           {step === 3 && (
             <>
               <h2>Experience</h2>
-              <label>
-                Experience
-                <textarea
-                  name="experience"
-                  value={form.experience}
-                  onChange={handleChange}
-                  rows={5}
-                  placeholder="Describe roles, responsibilities and achievements"
-                />
-              </label>
+              {form.experienceList.map((exp, idx) => (
+                <div key={idx} className={styles.expRow}>
+                  <input
+                    type="text"
+                    placeholder="Role (e.g. Software Engineer)"
+                    value={exp.role}
+                    onChange={(e) => updateExperience(idx, "role", e.target.value)}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Company (e.g. TechCorp)"
+                    value={exp.company}
+                    onChange={(e) => updateExperience(idx, "company", e.target.value)}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Period (e.g. 2020–2023)"
+                    value={exp.period}
+                    onChange={(e) => updateExperience(idx, "period", e.target.value)}
+                  />
+                  <textarea
+                    placeholder="Description (brief overview of responsibilities)"
+                    value={exp.description}
+                    onChange={(e) => updateExperience(idx, "description", e.target.value)}
+                    rows={3}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeExperience(idx)}
+                    className={styles.removeBtn}
+                  >
+                    &times;
+                  </button>
+                </div>
+              ))}
+              <button type="button" className={styles.addBtn} onClick={addExperience}>
+                + Add Experience
+              </button>
             </>
           )}
           {step === 4 && (
             <>
               <h2>Skills & More</h2>
-              <label>
-                Skills
-                <textarea
-                  name="skills"
-                  value={form.skills}
-                  onChange={handleChange}
-                  rows={3}
-                  placeholder="List your key skills separated by commas"
+              <div className={styles.skillSection}>
+                <span style={{ fontWeight: 500, fontSize: 14 }}>Skills</span>
+                {/* List of added skills with remove buttons */}
+                <div className={styles.skillList}>
+                  {form.skillsList.map((skill, idx) => (
+                    <span key={idx} className={styles.skillChip}>
+                      {skill}
+                      <button
+                        type="button"
+                        onClick={() => removeSkill(idx)}
+                        className={styles.removeChipBtn}
+                      >
+                        &times;
+                      </button>
+                    </span>
+                  ))}
+                </div>
+                {/* Input field to add a new skill */}
+                <input
+                  type="text"
+                  placeholder="Add a skill"
+                  value={newSkill}
+                  onChange={(e) => setNewSkill(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addSkill(newSkill);
+                      setNewSkill('');
+                    }
+                  }}
                 />
-                {/* Show skill suggestions toggle */}
+                {/* Button to toggle suggestions for skills */}
                 <button
                   type="button"
                   className={styles.suggestionBtn}
                   onClick={() => setShowSkillSuggestions((show) => !show)}
                 >
-                  {showSkillSuggestions ? "Hide" : "Show"} Skill Suggestions
+                  {showSkillSuggestions ? 'Hide' : 'Show'} Skill Suggestions
                 </button>
                 {showSkillSuggestions && (
                   <ul className={styles.suggestionsList}>
@@ -470,18 +718,7 @@ export default function Home() {
                       <li
                         key={idx}
                         onClick={() => {
-                          setForm((prev) => {
-                            // Append suggestion if not already present (case-insensitive)
-                            const existing = prev.skills
-                              .split(/,\s*/)
-                              .map((s) => s.trim().toLowerCase())
-                              .filter(Boolean);
-                            if (existing.includes(skill.toLowerCase())) return prev;
-                            const newSkills = prev.skills
-                              ? `${prev.skills}, ${skill}`
-                              : skill;
-                            return { ...prev, skills: newSkills };
-                          });
+                          addSkill(skill);
                           setShowSkillSuggestions(false);
                         }}
                       >
@@ -490,16 +727,46 @@ export default function Home() {
                     ))}
                   </ul>
                 )}
-              </label>
-              <label>
-                Languages (optional)
-                <textarea
-                  name="languages"
-                  value={form.languages}
-                  onChange={handleChange}
-                  rows={2}
-                  placeholder="e.g. English (native), Dutch (fluent)"
-                />
+              </div>
+              {/* Languages section is now a dynamic list of entries with a
+                  language name and proficiency level. Users can add multiple
+                  languages and select their level. */}
+              <div className={styles.langSection}>
+                <span style={{ fontWeight: 500, fontSize: 14 }}>Languages (optional)</span>
+                {form.languagesList.map((lang, idx) => (
+                  <div key={idx} className={styles.langRow}>
+                    <input
+                      type="text"
+                      placeholder="Language"
+                      value={lang.language}
+                      onChange={(e) => updateLanguage(idx, "language", e.target.value)}
+                    />
+                    <select
+                      value={lang.level}
+                      onChange={(e) => updateLanguage(idx, "level", e.target.value)}
+                    >
+                      <option value="">Level</option>
+                      <option value="Beginner">Beginner</option>
+                      <option value="Intermediate">Intermediate</option>
+                      <option value="Fluent">Fluent</option>
+                      <option value="Native">Native</option>
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => removeLanguage(idx)}
+                      className={styles.removeBtn}
+                    >
+                      &times;
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  className={styles.addBtn}
+                  onClick={addLanguage}
+                >
+                  + Add Language
+                </button>
                 <button
                   type="button"
                   className={styles.suggestionBtn}
@@ -513,16 +780,17 @@ export default function Home() {
                       <li
                         key={idx}
                         onClick={() => {
+                          // Only add if not already present (case‑insensitive)
                           setForm((prev) => {
-                            const existing = prev.languages
-                              .split(/,\s*/)
-                              .map((s) => s.trim().toLowerCase())
-                              .filter(Boolean);
-                            if (existing.includes(lang.toLowerCase())) return prev;
-                            const newLangs = prev.languages
-                              ? `${prev.languages}, ${lang}`
-                              : lang;
-                            return { ...prev, languages: newLangs };
+                            const existing = prev.languagesList.map((l) => l.language.toLowerCase());
+                            if (existing.includes(lang.split(" ")[0].toLowerCase())) return prev;
+                            return {
+                              ...prev,
+                              languagesList: [
+                                ...prev.languagesList,
+                                { language: lang.split(" – ")[0].split(" (")[0], level: "Fluent" },
+                              ],
+                            };
                           });
                           setShowLanguageSuggestions(false);
                         }}
@@ -532,22 +800,44 @@ export default function Home() {
                     ))}
                   </ul>
                 )}
-              </label>
-              <label>
-                Hobbies (optional)
-                <textarea
-                  name="hobbies"
-                  value={form.hobbies}
-                  onChange={handleChange}
-                  rows={2}
-                  placeholder="e.g. Photography, cycling, volunteering"
+              </div>
+              <div className={styles.hobbySection}>
+                <span style={{ fontWeight: 500, fontSize: 14 }}>Hobbies (optional)</span>
+                {/* List of added hobbies */}
+                <div className={styles.hobbyList}>
+                  {form.hobbiesList.map((hobby, idx) => (
+                    <span key={idx} className={styles.hobbyChip}>
+                      {hobby}
+                      <button
+                        type="button"
+                        onClick={() => removeHobby(idx)}
+                        className={styles.removeChipBtn}
+                      >
+                        &times;
+                      </button>
+                    </span>
+                  ))}
+                </div>
+                {/* Input to add a hobby */}
+                <input
+                  type="text"
+                  placeholder="Add a hobby"
+                  value={newHobby}
+                  onChange={(e) => setNewHobby(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addHobby(newHobby);
+                      setNewHobby('');
+                    }
+                  }}
                 />
                 <button
                   type="button"
                   className={styles.suggestionBtn}
                   onClick={() => setShowHobbySuggestions((show) => !show)}
                 >
-                  {showHobbySuggestions ? "Hide" : "Show"} Hobby Suggestions
+                  {showHobbySuggestions ? 'Hide' : 'Show'} Hobby Suggestions
                 </button>
                 {showHobbySuggestions && (
                   <ul className={styles.suggestionsList}>
@@ -555,17 +845,7 @@ export default function Home() {
                       <li
                         key={idx}
                         onClick={() => {
-                          setForm((prev) => {
-                            const existing = prev.hobbies
-                              .split(/,\s*/)
-                              .map((s) => s.trim().toLowerCase())
-                              .filter(Boolean);
-                            if (existing.includes(hobby.toLowerCase())) return prev;
-                            const newHobbies = prev.hobbies
-                              ? `${prev.hobbies}, ${hobby}`
-                              : hobby;
-                            return { ...prev, hobbies: newHobbies };
-                          });
+                          addHobby(hobby);
                           setShowHobbySuggestions(false);
                         }}
                       >
@@ -574,7 +854,7 @@ export default function Home() {
                     ))}
                   </ul>
                 )}
-              </label>
+              </div>
               <label>
                 Template Style
                 <select
